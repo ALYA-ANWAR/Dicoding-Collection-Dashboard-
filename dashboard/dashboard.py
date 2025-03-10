@@ -19,8 +19,6 @@ df.reset_index(drop=True, inplace=True)
 title_container = st.container()
 col1, col2 = st.columns([1, 10])
 with title_container:
-    with col1:
-        st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png", width=60)
     with col2:
         st.title("Bike Rental Dashboard")
 
