@@ -5,8 +5,7 @@ import streamlit as st
 from babel.numbers import format_currency
 sns.set(style='dark')
 
-# Load dataset
-df = pd.read_csv("all_data.csv")
+df = pd.read_csv("C:\Dashboard\proyek_analisis_data\dashboard/all_data.csv")
 
 # Pastikan kolom waktu dalam dataset bertipe datetime
 df["dteday"] = pd.to_datetime(df["dteday"])
@@ -19,12 +18,11 @@ df.reset_index(drop=True, inplace=True)
 title_container = st.container()
 col1, col2 = st.columns([1, 10])
 with title_container:
-    with col1:
-        st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png", width=60)
     with col2:
         st.title("Bike Rental Dashboard")
 
 with st.sidebar:
+    st.image("C:\Dashboard\proyek_analisis_data\dashboard/sepedaa.jpg")
     st.header("Filter Data")
     start_date, end_date = st.date_input("Rentang Waktu", [df["dteday"].min(), df["dteday"].max()])
     
