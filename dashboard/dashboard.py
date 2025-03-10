@@ -5,7 +5,8 @@ import streamlit as st
 from babel.numbers import format_currency
 sns.set(style='dark')
 
-df = pd.read_csv("C:/Dashboard/proyek_analisis_data/dashboard/all_data.csv")
+df = pd.read_csv("dashboard/all_data.csv")
+
 
 # Pastikan kolom waktu dalam dataset bertipe datetime
 df["dteday"] = pd.to_datetime(df["dteday"])
@@ -22,7 +23,7 @@ with title_container:
         st.title("Bike Rental Dashboard")
 
 with st.sidebar:
-    st.image("C:/Dashboard/proyek_analisis_data/dashboard/sepedaa.jpg")
+    st.image("dashboard/sepedaa.jpg")
     st.header("Filter Data")
     start_date, end_date = st.date_input("Rentang Waktu", [df["dteday"].min(), df["dteday"].max()])
     
