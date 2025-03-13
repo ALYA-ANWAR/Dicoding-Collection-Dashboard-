@@ -4,6 +4,7 @@ import seaborn as sns
 import streamlit as st
 import os
 
+
 # Load data dengan pengecekan keberadaan file
 file_path = "dashboard/all_data.csv"
 if not os.path.exists(file_path):
@@ -23,6 +24,9 @@ if missing_columns:
 # Mapping musim
 season_mapping = {1: "Semi", 2: "Panas", 3: "Gugur", 4: "Dingin"}
 df["season_x"] = df["season_x"].map(season_mapping)
+
+# Judul Dashboard
+st.title("Dashboard Peminjaman Sepeda 🚴✨")
 
 # Sidebar - Fitur Interaktif
 st.sidebar.header("Filter Data")
