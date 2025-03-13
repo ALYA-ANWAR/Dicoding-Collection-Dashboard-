@@ -2,104 +2,75 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
-from babel.numbers import format_currency
-sns.set(style='dark')
+import os
 
-df = pd.read_csv("dashboard/all_data.csv")
+# Load data dengan pengecekan keberadaan file
+file_path = "all_data.csv"
+if not os.path.exists(file_path):
+    st.error(f"Dataset tidak ditemukan di lokasi: {file_path}. Pastikan path sudah benar.")
+    st.stop()
 
-
-# Pastikan kolom waktu dalam dataset bertipe datetime
+df = pd.read_csv(file_path)
 df["dteday"] = pd.to_datetime(df["dteday"])
 
-# Mengurutkan DataFrame berdasarkan tanggal
-df.sort_values(by="dteday", inplace=True)
-df.reset_index(drop=True, inplace=True)
+# Pastikan kolom yang dibutuhkan tersedia
+required_columns = {"season_x", "hr", "workingday_x", "cnt_x", "dteday"}
+missing_columns = required_columns - set(df.columns)
+if missing_columns:
+    st.error(f"Kolom berikut tidak ditemukan dalam dataset: {missing_columns}")
+    st.stop()
 
-# Sidebar - Filter Data
-title_container = st.container()
-col1, col2 = st.columns([1, 10])
-with title_container:
-    with col2:
-        st.title("Bike Rental Dashboard")
+# Mapping musim
+season_mapping = {1: "Semi", 2: "Panas", 3: "Gugur", 4: "Dingin"}
+df["season_x"] = df["season_x"].map(season_mapping)
 
-with st.sidebar:
-    st.image("dashboard/sepedaa.jpg")
-    st.header("Filter Data")
-    start_date, end_date = st.date_input("Rentang Waktu", [df["dteday"].min(), df["dteday"].max()])
-    
-# Filter dataset berdasarkan rentang tanggal
-filtered_df = df[(df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
+# Sidebar - Fitur Interaktif
+st.sidebar.header("Filter Data")
+st.sidebar.image("C:/Dashboard/proyek_analisis_data/dashboard/sepedaa.jpg")
+selected_season = st.sidebar.selectbox("Pilih Musim", df["season_x"].dropna().unique())
 
-# Agregasi Data Harian
-daily_orders_df = filtered_df.groupby("dteday").agg({"cnt_y": "sum"}).reset_index()
-daily_orders_df.rename(columns={"cnt_y": "total_rentals"}, inplace=True)
+# Tambahkan fitur filter berdasarkan rentang tanggal
+date_range = st.sidebar.date_input(
+    "Pilih Rentang Tanggal", 
+    [df["dteday"].min(), df["dteday"].max()], 
+    min_value=df["dteday"].min(), 
+    max_value=df["dteday"].max()
+)
 
-# Metrics
-total_orders = daily_orders_df["total_rentals"].sum()
-average_orders = daily_orders_df["total_rentals"].mean()
+if isinstance(date_range, tuple) and len(date_range) == 2:
+    start_date, end_date = date_range
+else:
+    start_date, end_date = df["dteday"].min(), df["dteday"].max()
 
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("Total Rentals", value=total_orders)
-with col2:
-    st.metric("Average Rentals per Day", value=int(average_orders))
+# Filter data berdasarkan musim dan rentang tanggal
+filtered_df = df[(df["season_x"] == selected_season) & (df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
 
-# Visualisasi - Line Chart Tren Harian
-st.subheader("Daily Rental Trends")
-fig, ax = plt.subplots(figsize=(16, 6))
-ax.plot(daily_orders_df["dteday"], daily_orders_df["total_rentals"], marker='o', linewidth=2, color="#90CAF9")
-ax.set_xlabel("Date")
-ax.set_ylabel("Total Rentals")
-ax.tick_params(axis='y', labelsize=12)
-ax.tick_params(axis='x', labelsize=10, rotation=45)
+# Pertanyaan 1: Pola penggunaan sepeda berdasarkan jam dalam sehari
+st.subheader("Pola Penggunaan Sepeda: Hari Kerja vs Akhir Pekan")
+
+time_usage = df.groupby(["hr", "workingday_x"]).agg({"cnt_x": "sum"}).reset_index()
+weekday_usage = time_usage[time_usage["workingday_x"] == 1]
+weekend_usage = time_usage[time_usage["workingday_x"] == 0]
+
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(weekday_usage["hr"], weekday_usage["cnt_x"], marker='o', label="Hari Kerja", color="blue")
+ax.plot(weekend_usage["hr"], weekend_usage["cnt_x"], marker='o', label="Akhir Pekan", color="red")
+ax.set_xlabel("Jam")
+ax.set_ylabel("Jumlah Peminjaman")
+ax.set_title("Peminjaman Sepeda per Jam")
+ax.legend()
+ax.grid()
 st.pyplot(fig)
 
-# Visualisasi - Bar Chart Pola Per Jam
-st.subheader("Hourly Rental Patterns")
-hourly_orders_df = filtered_df.groupby("hr").agg({"cnt_y": "sum"}).reset_index()
-hourly_orders_df.rename(columns={"cnt_y": "total_rentals"}, inplace=True)
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.barplot(x=hourly_orders_df["hr"], y=hourly_orders_df["total_rentals"], palette="Blues", ax=ax)
-ax.set_xlabel("Hour of the Day")
-ax.set_ylabel("Total Rentals")
+# Pertanyaan 2: Pengaruh musim terhadap jumlah peminjaman
+st.subheader("Pengaruh Musim terhadap Peminjaman Sepeda")
+
+seasonal_usage = filtered_df.groupby("season_x").agg({"cnt_x": "sum"}).reset_index()
+fig, ax = plt.subplots(figsize=(8, 5))
+sns.barplot(x="season_x", y="cnt_x", data=seasonal_usage, palette="Blues", ax=ax)
+ax.set_xlabel("Musim")
+ax.set_ylabel("Jumlah Peminjaman")
+ax.set_title("Total Peminjaman Sepeda Berdasarkan Musim")
 st.pyplot(fig)
 
-# --- Monthly Rentals ---
-monthly_rentals = df.groupby(df["dteday"].dt.strftime('%Y-%m'))["cnt_y"].sum()
-fig, ax = plt.subplots(figsize=(12, 6))
-ax.plot(monthly_rentals.index, monthly_rentals.values, marker='o', linestyle='-', color='#42A5F5')
-ax.set_title("Monthly Rentals Trend")
-ax.set_xlabel("Month")
-ax.set_ylabel("Total Rentals")
-ax.tick_params(axis='x', rotation=45)
-st.pyplot(fig)
-
-# --- Weather Impact ---
-fig, ax = plt.subplots(figsize=(8, 6))
-sns.boxplot(x="weathersit_y", y="cnt_y", data=df, ax=ax, palette="coolwarm")
-ax.set_title("Impact of Weather on Rentals")
-ax.set_xlabel("Weather Condition")
-ax.set_ylabel("Total Rentals")
-st.pyplot(fig)
-
-# --- User Type Comparison ---
-user_type_df = df.groupby("hr")[["casual_y", "registered_y"]].sum()
-fig, ax = plt.subplots(figsize=(10, 6))
-user_type_df.plot(kind='bar', stacked=True, ax=ax, colormap='viridis')
-ax.set_title("User Type Comparison by Hour")
-ax.set_xlabel("Hour of the Day")
-ax.set_ylabel("Total Users")
-st.pyplot(fig)
-
-# --- Correlation Heatmap ---
-correlation_matrix = df[["temp_y", "hum_y", "windspeed_y", "cnt_y"]].corr()
-fig, ax = plt.subplots(figsize=(8, 6))
-sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax)
-ax.set_title("Feature Correlation Heatmap")
-st.pyplot(fig)
-
-st.write("### Dashboard Summary")
-st.write("Dashboard ini menampilkan tren penyewaan sepeda berdasarkan waktu, cuaca, dan tipe pengguna.")
-
-
-
+st.write("### Dashboard ini menampilkan pola peminjaman sepeda berdasarkan jam serta pengaruh musim terhadap jumlah peminjaman.")
