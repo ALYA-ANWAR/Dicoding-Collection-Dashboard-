@@ -5,7 +5,7 @@ import streamlit as st
 import os
 
 # Load data dengan pengecekan keberadaan file
-file_path = "all_data.csv"
+file_path = "dashboard/all_data.csv"
 if not os.path.exists(file_path):
     st.error(f"Dataset tidak ditemukan di lokasi: {file_path}. Pastikan path sudah benar.")
     st.stop()
@@ -26,7 +26,7 @@ df["season_x"] = df["season_x"].map(season_mapping)
 
 # Sidebar - Fitur Interaktif
 st.sidebar.header("Filter Data")
-st.sidebar.image("C:/Dashboard/proyek_analisis_data/dashboard/sepedaa.jpg")
+st.sidebar.image("dashboard/sepedaa.jpg")
 selected_season = st.sidebar.selectbox("Pilih Musim", df["season_x"].dropna().unique())
 
 # Tambahkan fitur filter berdasarkan rentang tanggal
