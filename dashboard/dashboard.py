@@ -4,7 +4,6 @@ import seaborn as sns
 import streamlit as st
 import os
 
-
 # Load data dengan pengecekan keberadaan file
 file_path = "dashboard/all_data.csv"
 if not os.path.exists(file_path):
@@ -31,7 +30,10 @@ st.title("Dashboard Peminjaman Sepeda 🚴✨")
 # Sidebar - Fitur Interaktif
 st.sidebar.header("Filter Data")
 st.sidebar.image("dashboard/sepedaa.jpg")
-selected_season = st.sidebar.selectbox("Pilih Musim", df["season_x"].dropna().unique())
+
+# Menambahkan opsi "All Season"
+season_options = ["All Season"] + list(df["season_x"].dropna().unique())
+selected_season = st.sidebar.selectbox("Pilih Musim", season_options)
 
 # Tambahkan fitur filter berdasarkan rentang tanggal
 date_range = st.sidebar.date_input(
@@ -47,7 +49,10 @@ else:
     start_date, end_date = df["dteday"].min(), df["dteday"].max()
 
 # Filter data berdasarkan musim dan rentang tanggal
-filtered_df = df[(df["season_x"] == selected_season) & (df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
+if selected_season == "All Season":
+    filtered_df = df[(df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
+else:
+    filtered_df = df[(df["season_x"] == selected_season) & (df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
 
 # Pertanyaan 1: Pola penggunaan sepeda berdasarkan jam dalam sehari
 st.subheader("Pola Penggunaan Sepeda: Hari Kerja vs Akhir Pekan")
