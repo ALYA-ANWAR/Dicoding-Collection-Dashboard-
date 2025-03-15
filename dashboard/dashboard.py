@@ -31,34 +31,29 @@ st.title("Dashboard Peminjaman Sepeda 🚴✨")
 st.sidebar.header("Filter Data")
 st.sidebar.image("dashboard/sepedaa.jpg")
 
-# Menambahkan opsi "All Season"
+# Pilihan musim dengan opsi "All Season"
 season_options = ["All Season"] + list(df["season_x"].dropna().unique())
 selected_season = st.sidebar.selectbox("Pilih Musim", season_options)
 
-# Tambahkan fitur filter berdasarkan rentang tanggal
-date_range = st.sidebar.date_input(
-    "Pilih Rentang Tanggal", 
-    [df["dteday"].min(), df["dteday"].max()], 
-    min_value=df["dteday"].min(), 
-    max_value=df["dteday"].max()
+# Filter rentang tanggal
+start_date, end_date = st.sidebar.date_input(
+    "Pilih Rentang Tanggal", [df["dteday"].min(), df["dteday"].max()],
+    min_value=df["dteday"].min(), max_value=df["dteday"].max()
 )
 
-if isinstance(date_range, tuple) and len(date_range) == 2:
-    start_date, end_date = date_range
-else:
-    start_date, end_date = df["dteday"].min(), df["dteday"].max()
+# Filter data berdasarkan rentang tanggal saja (untuk grafik pertama)
+filtered_df_date = df[(df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
 
-# Filter data berdasarkan musim dan rentang tanggal
+# Filter data berdasarkan musim saja (untuk grafik kedua)
 if selected_season == "All Season":
-    filtered_df = df[(df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
+    filtered_df_season = df.copy()
 else:
-    filtered_df = df[(df["season_x"] == selected_season) & (df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
+    filtered_df_season = df[df["season_x"] == selected_season]
 
-# **PERTANYAAN 1: Pola penggunaan sepeda berdasarkan jam dalam sehari**
+# Grafik 1: Pola Penggunaan Sepeda (Hanya berdasarkan tanggal, tidak terpengaruh musim)
 st.subheader("Pola Penggunaan Sepeda: Hari Kerja vs Akhir Pekan")
+time_usage = filtered_df_date.groupby(["hr", "workingday_x"]).agg({"cnt_x": "sum"}).reset_index()
 
-# **PERBAIKAN: Gunakan `filtered_df` agar filter bekerja**
-time_usage = filtered_df.groupby(["hr", "workingday_x"]).agg({"cnt_x": "sum"}).reset_index()
 weekday_usage = time_usage[time_usage["workingday_x"] == 1]
 weekend_usage = time_usage[time_usage["workingday_x"] == 0]
 
@@ -72,12 +67,12 @@ ax.legend()
 ax.grid()
 st.pyplot(fig)
 
-# **PERTANYAAN 2: Pengaruh musim terhadap jumlah peminjaman**
+# Grafik 2: Pengaruh Musim terhadap Peminjaman Sepeda (Hanya berdasarkan musim, tidak terpengaruh tanggal)
 st.subheader("Pengaruh Musim terhadap Peminjaman Sepeda")
+seasonal_usage = filtered_df_season.groupby("season_x").agg({"cnt_x": "sum"}).reset_index()
 
-seasonal_usage = filtered_df.groupby("season_x").agg({"cnt_x": "sum"}).reset_index()
 fig, ax = plt.subplots(figsize=(8, 5))
-sns.barplot(x="season_x", y="cnt_x", data=seasonal_usage, palette="Blues", ax=ax)
+sns.barplot(x="season_x", y="cnt_x", hue="season_x", data=seasonal_usage, dodge=False, legend=False, ax=ax)
 ax.set_xlabel("Musim")
 ax.set_ylabel("Jumlah Peminjaman")
 ax.set_title("Total Peminjaman Sepeda Berdasarkan Musim")
