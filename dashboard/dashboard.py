@@ -54,10 +54,11 @@ if selected_season == "All Season":
 else:
     filtered_df = df[(df["season_x"] == selected_season) & (df["dteday"] >= pd.to_datetime(start_date)) & (df["dteday"] <= pd.to_datetime(end_date))]
 
-# Pertanyaan 1: Pola penggunaan sepeda berdasarkan jam dalam sehari
+# **PERTANYAAN 1: Pola penggunaan sepeda berdasarkan jam dalam sehari**
 st.subheader("Pola Penggunaan Sepeda: Hari Kerja vs Akhir Pekan")
 
-time_usage = df.groupby(["hr", "workingday_x"]).agg({"cnt_x": "sum"}).reset_index()
+# **PERBAIKAN: Gunakan `filtered_df` agar filter bekerja**
+time_usage = filtered_df.groupby(["hr", "workingday_x"]).agg({"cnt_x": "sum"}).reset_index()
 weekday_usage = time_usage[time_usage["workingday_x"] == 1]
 weekend_usage = time_usage[time_usage["workingday_x"] == 0]
 
@@ -71,7 +72,7 @@ ax.legend()
 ax.grid()
 st.pyplot(fig)
 
-# Pertanyaan 2: Pengaruh musim terhadap jumlah peminjaman
+# **PERTANYAAN 2: Pengaruh musim terhadap jumlah peminjaman**
 st.subheader("Pengaruh Musim terhadap Peminjaman Sepeda")
 
 seasonal_usage = filtered_df.groupby("season_x").agg({"cnt_x": "sum"}).reset_index()
